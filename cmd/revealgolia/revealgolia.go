@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/opt"
@@ -38,7 +39,7 @@ type Item struct {
 }
 
 // getSearchObjects transform input reveal file to algolia object
-func getSearchObjects(urlPrefix, source string, sep, verticalSep *regexp.Regexp) ([]Item, error) {
+func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]Item, error) {
 	content, err := ioutil.ReadFile(source)
 	if err != nil {
 		return nil, err
@@ -72,8 +73,8 @@ func getSearchObjects(urlPrefix, source string, sep, verticalSep *regexp.Regexp)
 			}
 
 			objects = append(objects, Item{
-				ObjectID: fmt.Sprintf("%s_%d", urlPrefix, index),
-				URL:      path.Join("/", urlPrefix, fmt.Sprintf("/#/%d/%d", chapterNum, slideNum)),
+				ObjectID: fmt.Sprintf("%s_%d", name, index),
+				URL:      path.Join("/", name, fmt.Sprintf("/#/%d/%d", chapterNum, slideNum)),
 				H:        chapterNum,
 				V:        slideNum,
 				Content:  slide,
@@ -106,12 +107,8 @@ func saveObjects(objects []Item, debug bool, index *search.Index) error {
 		return nil
 	}
 
-	wg, err := index.ReplaceAllObjects(objects)
-	if err != nil {
-		return err
-	}
-
-	return wg.Wait()
+	_, err := index.SaveObjects(objects)
+	return err
 }
 
 func main() {
@@ -120,12 +117,12 @@ func main() {
 	app := fs.String("app", "", "[algolia] App")
 	key := fs.String("key", "", "[algolia] Key")
 	indexName := fs.String("index", "", "[algolia] Index")
-	source := fs.String("source", "", "[reveal] Markdown file source")
+	source := fs.String("source", "", "[reveal] Walked markdown directory")
+	prefixFromFolder := fs.Bool("prefixFromFolder", false, "[reveal] Use name of folder as URL prefix")
 	sep := fs.String("sep", "^\n\n\n", "[reveal] Separator")
 	vsep := fs.String("verticalSep", "^\n\n", "[reveal] Vertical separator")
 
 	debug := fs.Bool("debug", false, "Debug output instead of sending them")
-	urlPrefix := fs.String("urlPrefix", "", "URL Prefix")
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		log.Fatal(err)
@@ -137,18 +134,35 @@ func main() {
 	client := search.NewClient(*app, *key)
 	index := client.InitIndex(*indexName)
 
+	if _, err := index.Delete(); err != nil {
+		log.Fatal(err)
+	}
+
 	if err := configIndex(index); err != nil {
 		log.Fatal(err)
 	}
 
-	objects, err := getSearchObjects(*urlPrefix, *source, sepRegex, vsepRegex)
+	err := filepath.Walk(*source, func(path string, info os.FileInfo, err error) error {
+		if filepath.Ext(path) != ".md" {
+			return nil
+		}
+
+		name := ""
+		if *prefixFromFolder {
+			name = filepath.Base(filepath.Dir(path))
+		}
+
+		objects, err := getSearchObjects(name, path, sepRegex, vsepRegex)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("%d objects found in %s\n", len(objects), info.Name())
+		return saveObjects(objects, *debug, index)
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%d objects found\n", len(objects))
 
-	if err := saveObjects(objects, *debug, index); err != nil {
-		log.Fatal(err)
-	}
 	log.Println("Done!")
 }

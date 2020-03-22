@@ -12,14 +12,18 @@
 Usage of revealgolia:
   -app string
         [algolia] App
+  -debug
+        Debug output instead of sending them
   -index string
         [algolia] Index
   -key string
         [algolia] Key
+  -prefixFromFolder
+        [reveal] Use name of folder as URL prefix
   -sep string
         [reveal] Separator (default "^\n\n\n")
   -source string
-        [reveal] Markdown file source
+        [reveal] Walked markdown directory
   -verticalSep string
         [reveal] Vertical separator (default "^\n\n")
 ```
