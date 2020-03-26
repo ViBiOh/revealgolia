@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -12,8 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/algolia/algoliasearch-client-go/v3/algolia/opt"
-	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
+	"github.com/ViBiOh/httputils/v3/pkg/request"
 )
 
 var (
@@ -28,7 +28,6 @@ var (
 
 // Item store indexed item
 type Item struct {
-	ObjectID string   `json:"objectID"`
 	URL      string   `json:"url"`
 	H        int      `json:"h"`
 	V        int      `json:"v"`
@@ -36,6 +35,14 @@ type Item struct {
 	Chapter  string   `json:"chapter"`
 	Keywords []string `json:"keywords"`
 	Img      string   `json:"img"`
+}
+
+func getRequest(app, key string) *request.Request {
+	return request.New().Header("X-Algolia-Application-Id", app).Header("X-Algolia-API-Key", key)
+}
+
+func getURL(app, path, index string) string {
+	return fmt.Sprintf(fmt.Sprintf("https://%s.algolia.net%s", app, path), index)
 }
 
 // getSearchObjects transform input reveal file to algolia object
@@ -73,7 +80,6 @@ func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]I
 			}
 
 			objects = append(objects, Item{
-				ObjectID: fmt.Sprintf("%s_%d", name, index),
 				URL:      path.Join("/", name, fmt.Sprintf("/#/%d/%d", chapterNum, slideNum)),
 				H:        chapterNum,
 				V:        slideNum,
@@ -89,25 +95,32 @@ func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]I
 	return objects, nil
 }
 
-func configIndex(index *search.Index) error {
-	_, err := index.SetSettings(search.Settings{
-		SearchableAttributes: opt.SearchableAttributes("keywords", "img", "content"),
-	})
+func configIndex(request *request.Request, app, index string) error {
+	settings := map[string]interface{}{
+		"searchableAttributes": []string{"keywords", "img", "content"},
+	}
+
+	_, err := request.Put(getURL(app, "/1/indexes/%s/settings", index)).JSON(context.Background(), settings)
 	return err
 }
 
-func saveObjects(objects []Item, debug bool, index *search.Index) error {
-	if debug {
-		output, err := json.MarshalIndent(objects, "", "  ")
-		if err != nil {
-			return err
-		}
+func clearIndex(request *request.Request, app, index string) error {
+	_, err := request.Post(getURL(app, "/1/indexes/%s/clear", index)).Send(context.Background(), nil)
+	return err
+}
 
-		log.Printf("%s\n", output)
-		return nil
+func debugObject(objects Item) error {
+	output, err := json.MarshalIndent(objects, "", "  ")
+	if err != nil {
+		return err
 	}
 
-	_, err := index.SaveObjects(objects)
+	log.Printf("%s\n", output)
+	return nil
+}
+
+func saveObject(request *request.Request, app, index string, object Item) error {
+	_, err := request.Post(getURL(app, "/1/indexes/%s", index)).JSON(context.Background(), object)
 	return err
 }
 
@@ -116,7 +129,7 @@ func main() {
 
 	app := fs.String("app", "", "[algolia] App")
 	key := fs.String("key", "", "[algolia] Key")
-	indexName := fs.String("index", "", "[algolia] Index")
+	index := fs.String("index", "", "[algolia] Index")
 	source := fs.String("source", "", "[reveal] Walked markdown directory")
 	prefixFromFolder := fs.Bool("prefixFromFolder", false, "[reveal] Use name of folder as URL prefix")
 	sep := fs.String("sep", "^\n\n\n", "[reveal] Separator")
@@ -131,15 +144,14 @@ func main() {
 	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *sep))
 	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *vsep))
 
-	client := search.NewClient(*app, *key)
-	index := client.InitIndex(*indexName)
+	if !*debug {
+		if err := clearIndex(getRequest(*app, *key), *app, *index); err != nil {
+			log.Fatal(err)
+		}
 
-	if _, err := index.Delete(); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := configIndex(index); err != nil {
-		log.Fatal(err)
+		if err := configIndex(getRequest(*app, *key), *app, *index); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	err := filepath.Walk(*source, func(path string, info os.FileInfo, err error) error {
@@ -158,7 +170,17 @@ func main() {
 		}
 
 		log.Printf("%d objects found in %s\n", len(objects), info.Name())
-		return saveObjects(objects, *debug, index)
+		for _, object := range objects {
+			if *debug {
+				if err := debugObject(object); err != nil {
+					return err
+				}
+			} else if err := saveObject(getRequest(*app, *key), *app, *index, object); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 	if err != nil {
 		log.Fatal(err)
