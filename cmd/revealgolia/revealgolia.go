@@ -26,6 +26,17 @@ var (
 	italicRegex       = regexp.MustCompile(`\*\s*([^*]*)\s*\*`)
 )
 
+// Batch contains batchs actions
+type Batch struct {
+	Requests []BatchAction `json:"requests"`
+}
+
+// BatchAction contains action to perform inside a batch
+type BatchAction struct {
+	Action string `json:"action"`
+	Body   Item   `json:"body"`
+}
+
 // Item store indexed item
 type Item struct {
 	URL      string   `json:"url"`
@@ -109,7 +120,7 @@ func clearIndex(request *request.Request, app, index string) error {
 	return err
 }
 
-func debugObject(objects Item) error {
+func debugObjects(objects []Item) error {
 	output, err := json.MarshalIndent(objects, "", "  ")
 	if err != nil {
 		return err
@@ -119,8 +130,16 @@ func debugObject(objects Item) error {
 	return nil
 }
 
-func saveObject(request *request.Request, app, index string, object Item) error {
-	_, err := request.Post(getURL(app, "/1/indexes/%s", index)).JSON(context.Background(), object)
+func saveObjects(request *request.Request, app, index string, objects []Item) error {
+	requests := make([]BatchAction, len(objects))
+	for index, object := range objects {
+		requests[index] = BatchAction{
+			Action: "addObject",
+			Body:   object,
+		}
+	}
+
+	_, err := request.Post(getURL(app, "/1/indexes/%s/batch", index)).JSON(context.Background(), Batch{requests})
 	return err
 }
 
@@ -170,14 +189,12 @@ func main() {
 		}
 
 		log.Printf("%d objects found in %s\n", len(objects), info.Name())
-		for _, object := range objects {
-			if *debug {
-				if err := debugObject(object); err != nil {
-					return err
-				}
-			} else if err := saveObject(getRequest(*app, *key), *app, *index, object); err != nil {
+		if *debug {
+			if err := debugObjects(objects); err != nil {
 				return err
 			}
+		} else if err := saveObjects(getRequest(*app, *key), *app, *index, objects); err != nil {
+			return err
 		}
 
 		return nil
