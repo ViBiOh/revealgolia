@@ -11,19 +11,19 @@
 ```bash
 Usage of revealgolia:
   -app string
-        [algolia] App
+        [algolia] Application {REVEALGOLIA_APP}
   -debug
-        Debug output instead of sending them
+        [app] Debug output instead of sending them {REVEALGOLIA_DEBUG}
   -index string
-        [algolia] Index
+        [algolia] Index {REVEALGOLIA_INDEX}
   -key string
-        [algolia] Key
+        [algolia] Key {REVEALGOLIA_KEY}
   -prefixFromFolder
-        [reveal] Use name of folder as URL prefix
+        [reveal] Use name of folder as URL prefix {REVEALGOLIA_PREFIX_FROM_FOLDER}
   -sep string
-        [reveal] Separator (default "^\n\n\n")
+        [reveal] Separator {REVEALGOLIA_SEP} (default "^\n\n\n")
   -source string
-        [reveal] Walked markdown directory
+        [reveal] Walked markdown directory {REVEALGOLIA_SOURCE}
   -verticalSep string
-        [reveal] Vertical separator (default "^\n\n")
+        [reveal] Vertical separator {REVEALGOLIA_VERTICAL_SEP} (default "^\n\n")
 ```

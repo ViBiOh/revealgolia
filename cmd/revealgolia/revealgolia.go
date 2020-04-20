@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/ViBiOh/httputils/v3/pkg/flags"
+	"github.com/ViBiOh/httputils/v3/pkg/logger"
 	"github.com/ViBiOh/httputils/v3/pkg/request"
 )
 
@@ -146,19 +148,17 @@ func saveObjects(request *request.Request, app, index string, objects []Item) er
 func main() {
 	fs := flag.NewFlagSet("revealgolia", flag.ExitOnError)
 
-	app := fs.String("app", "", "[algolia] App")
-	key := fs.String("key", "", "[algolia] Key")
-	index := fs.String("index", "", "[algolia] Index")
-	source := fs.String("source", "", "[reveal] Walked markdown directory")
-	prefixFromFolder := fs.Bool("prefixFromFolder", false, "[reveal] Use name of folder as URL prefix")
-	sep := fs.String("sep", "^\n\n\n", "[reveal] Separator")
-	vsep := fs.String("verticalSep", "^\n\n", "[reveal] Vertical separator")
+	app := flags.New("", "algolia").Name("app").Default("").Label("Application").ToString(fs)
+	key := flags.New("", "algolia").Name("key").Default("").Label("Key").ToString(fs)
+	index := flags.New("", "algolia").Name("index").Default("").Label("Index").ToString(fs)
+	source := flags.New("", "reveal").Name("source").Default("").Label("Walked markdown directory").ToString(fs)
+	prefixFromFolder := flags.New("", "reveal").Name("prefixFromFolder").Default(false).Label("Use name of folder as URL prefix").ToBool(fs)
+	sep := flags.New("", "reveal").Name("sep").Default("^\n\n\n").Label("Separator").ToString(fs)
+	vsep := flags.New("", "reveal").Name("verticalSep").Default("^\n\n").Label("Vertical separator").ToString(fs)
 
-	debug := fs.Bool("debug", false, "Debug output instead of sending them")
+	debug := flags.New("", "app").Name("debug").Default(false).Label("Debug output instead of sending them").ToBool(fs)
 
-	if err := fs.Parse(os.Args[1:]); err != nil {
-		log.Fatal(err)
-	}
+	logger.Fatal(fs.Parse(os.Args[1:]))
 
 	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *sep))
 	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *vsep))
