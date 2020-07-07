@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -19,11 +18,8 @@ import (
 )
 
 var (
-	// ErrIndexNotFound occurs when index is not found in List
-	ErrIndexNotFound = errors.New("index not found")
-
 	chapterTitleRegex = regexp.MustCompile(`^#\s+(.*)\s*`)
-	imgRegex          = regexp.MustCompile(`\[\]\((.*)\)`)
+	imgRegex          = regexp.MustCompile(`\[]\((.*)\)`)
 	strongRegex       = regexp.MustCompile(`\*\*\s*([^*]*)\s*\*\*`)
 	italicRegex       = regexp.MustCompile(`\*\s*([^*]*)\s*\*`)
 )
