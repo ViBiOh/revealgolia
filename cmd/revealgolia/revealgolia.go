@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -124,7 +123,7 @@ func debugObjects(objects []Item) error {
 		return err
 	}
 
-	log.Printf("%s\n", output)
+	logger.Info("%s\n", output)
 	return nil
 }
 
@@ -144,6 +143,8 @@ func saveObjects(request *request.Request, app, index string, objects []Item) er
 func main() {
 	fs := flag.NewFlagSet("revealgolia", flag.ExitOnError)
 
+	loggerConfig := logger.Flags(fs, "logger")
+
 	app := flags.New("", "algolia").Name("app").Default("").Label("Application").ToString(fs)
 	key := flags.New("", "algolia").Name("key").Default("").Label("Key").ToString(fs)
 	index := flags.New("", "algolia").Name("index").Default("").Label("Index").ToString(fs)
@@ -155,21 +156,18 @@ func main() {
 	debug := flags.New("", "app").Name("debug").Default(false).Label("Debug output instead of sending them").ToBool(fs)
 
 	logger.Fatal(fs.Parse(os.Args[1:]))
+	logger.Global(logger.New(loggerConfig))
+	defer logger.Close()
 
 	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *sep))
 	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *vsep))
 
 	if !*debug {
-		if err := clearIndex(getRequest(*app, *key), *app, *index); err != nil {
-			log.Fatal(err)
-		}
-
-		if err := configIndex(getRequest(*app, *key), *app, *index); err != nil {
-			log.Fatal(err)
-		}
+		logger.Fatal(clearIndex(getRequest(*app, *key), *app, *index))
+		logger.Fatal(configIndex(getRequest(*app, *key), *app, *index))
 	}
 
-	err := filepath.Walk(*source, func(path string, info os.FileInfo, err error) error {
+	logger.Fatal(filepath.Walk(*source, func(path string, info os.FileInfo, err error) error {
 		if filepath.Ext(path) != ".md" {
 			return nil
 		}
@@ -184,7 +182,7 @@ func main() {
 			return err
 		}
 
-		log.Printf("%d objects found in %s\n", len(objects), info.Name())
+		logger.Info("%d objects found in %s\n", len(objects), info.Name())
 		if *debug {
 			if err := debugObjects(objects); err != nil {
 				return err
@@ -194,10 +192,7 @@ func main() {
 		}
 
 		return nil
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
+	}))
 
-	log.Println("Done!")
+	logger.Info("Done!")
 }
