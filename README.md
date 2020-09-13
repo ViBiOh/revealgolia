@@ -17,6 +17,16 @@ Usage of revealgolia:
         [algolia] Index {REVEALGOLIA_INDEX}
   -key string
         [algolia] Key {REVEALGOLIA_KEY}
+  -loggerJson
+        [logger] Log format as JSON {REVEALGOLIA_LOGGER_JSON}
+  -loggerLevel string
+        [logger] Logger level {REVEALGOLIA_LOGGER_LEVEL} (default "INFO")
+  -loggerLevelKey string
+        [logger] Key for level in JSON {REVEALGOLIA_LOGGER_LEVEL_KEY} (default "level")
+  -loggerMessageKey string
+        [logger] Key for message in JSON {REVEALGOLIA_LOGGER_MESSAGE_KEY} (default "message")
+  -loggerTimeKey string
+        [logger] Key for timestamp in JSON {REVEALGOLIA_LOGGER_TIME_KEY} (default "time")
   -prefixFromFolder
         [reveal] Use name of folder as URL prefix {REVEALGOLIA_PREFIX_FROM_FOLDER}
   -sep string
