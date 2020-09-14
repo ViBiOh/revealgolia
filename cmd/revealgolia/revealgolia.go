@@ -182,7 +182,7 @@ func main() {
 			return err
 		}
 
-		logger.Info("%d objects found in %s\n", len(objects), info.Name())
+		logger.Info("%d objects found in %s", len(objects), info.Name())
 		if *debug {
 			if err := debugObjects(objects); err != nil {
 				return err
