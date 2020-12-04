@@ -37,12 +37,12 @@ type BatchAction struct {
 // Item store indexed item
 type Item struct {
 	URL      string   `json:"url"`
-	H        int      `json:"h"`
-	V        int      `json:"v"`
 	Content  string   `json:"content"`
 	Chapter  string   `json:"chapter"`
-	Keywords []string `json:"keywords"`
 	Img      string   `json:"img"`
+	Keywords []string `json:"keywords"`
+	H        int      `json:"h"`
+	V        int      `json:"v"`
 }
 
 func getRequest(app, key string) *request.Request {
