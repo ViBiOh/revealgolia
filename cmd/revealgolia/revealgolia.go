@@ -166,7 +166,7 @@ func main() {
 		logger.Fatal(configIndex(getRequest(*app, *key), *app, *index))
 	}
 
-	logger.Fatal(filepath.Walk(*source, func(path string, info os.FileInfo, err error) error {
+	logger.Fatal(filepath.Walk(*source, func(path string, info os.FileInfo, _ error) error {
 		if filepath.Ext(path) != ".md" {
 			return nil
 		}
