@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -55,7 +54,7 @@ func getURL(app, path, index string) string {
 
 // getSearchObjects transform input reveal file to algolia object
 func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]Item, error) {
-	content, err := ioutil.ReadFile(source)
+	content, err := os.ReadFile(source)
 	if err != nil {
 		return nil, err
 	}
