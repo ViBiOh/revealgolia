@@ -44,7 +44,7 @@ type Item struct {
 	V        int      `json:"v"`
 }
 
-func getRequest(app, key string) *request.Request {
+func getRequest(app, key string) request.Request {
 	return request.New().Header("X-Algolia-Application-Id", app).Header("X-Algolia-API-Key", key)
 }
 
@@ -102,7 +102,7 @@ func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]I
 	return objects, nil
 }
 
-func configIndex(request *request.Request, app, index string) error {
+func configIndex(request request.Request, app, index string) error {
 	settings := map[string]interface{}{
 		"searchableAttributes": []string{"keywords", "img", "content"},
 	}
@@ -111,7 +111,7 @@ func configIndex(request *request.Request, app, index string) error {
 	return err
 }
 
-func clearIndex(request *request.Request, app, index string) error {
+func clearIndex(request request.Request, app, index string) error {
 	_, err := request.Post(getURL(app, "/1/indexes/%s/clear", index)).Send(context.Background(), nil)
 	return err
 }
@@ -126,7 +126,7 @@ func debugObjects(objects []Item) error {
 	return nil
 }
 
-func saveObjects(request *request.Request, app, index string, objects []Item) error {
+func saveObjects(request request.Request, app, index string, objects []Item) error {
 	requests := make([]BatchAction, len(objects))
 	for index, object := range objects {
 		requests[index] = BatchAction{
@@ -160,10 +160,11 @@ func main() {
 
 	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *sep))
 	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *vsep))
+	req := getRequest(*app, *key)
 
 	if !*debug {
-		logger.Fatal(clearIndex(getRequest(*app, *key), *app, *index))
-		logger.Fatal(configIndex(getRequest(*app, *key), *app, *index))
+		logger.Fatal(clearIndex(req, *app, *index))
+		logger.Fatal(configIndex(req, *app, *index))
 	}
 
 	logger.Fatal(filepath.Walk(*source, func(path string, info os.FileInfo, _ error) error {
@@ -186,7 +187,7 @@ func main() {
 			if err := debugObjects(objects); err != nil {
 				return err
 			}
-		} else if err := saveObjects(getRequest(*app, *key), *app, *index, objects); err != nil {
+		} else if err := saveObjects(req, *app, *index, objects); err != nil {
 			return err
 		}
 
