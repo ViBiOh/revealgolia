@@ -2,4 +2,4 @@ module github.com/ViBiOh/revealgolia
 
 go 1.17
 
-require github.com/ViBiOh/httputils/v4 v4.31.2
+require github.com/ViBiOh/httputils/v4 v4.32.0
