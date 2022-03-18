@@ -103,7 +103,7 @@ func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]I
 }
 
 func configIndex(request request.Request, app, index string) error {
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"searchableAttributes": []string{"keywords", "img", "content"},
 	}
 
