@@ -144,15 +144,15 @@ func main() {
 
 	loggerConfig := logger.Flags(fs, "logger")
 
-	app := flags.New("", "algolia", "app").Default("", nil).Label("Application").ToString(fs)
-	key := flags.New("", "algolia", "key").Default("", nil).Label("Key").ToString(fs)
-	index := flags.New("", "algolia", "index").Default("", nil).Label("Index").ToString(fs)
-	source := flags.New("", "reveal", "source").Default("", nil).Label("Walked markdown directory").ToString(fs)
-	prefixFromFolder := flags.New("", "reveal", "prefixFromFolder").Default(false, nil).Label("Use name of folder as URL prefix").ToBool(fs)
-	sep := flags.New("", "reveal", "sep").Default("^\n\n\n", nil).Label("Separator").ToString(fs)
-	vsep := flags.New("", "reveal", "verticalSep").Default("^\n\n", nil).Label("Vertical separator").ToString(fs)
+	app := flags.String(fs, "", "algolia", "app", "Application", "", nil)
+	key := flags.String(fs, "", "algolia", "key", "Key", "", nil)
+	index := flags.String(fs, "", "algolia", "index", "Index", "", nil)
+	source := flags.String(fs, "", "reveal", "source", "Walked markdown directory", "", nil)
+	prefixFromFolder := flags.Bool(fs, "", "reveal", "prefixFromFolder", "Use name of folder as URL prefix", false, nil)
+	sep := flags.String(fs, "", "reveal", "sep", "Separator", "^\n\n\n", nil)
+	vsep := flags.String(fs, "", "reveal", "verticalSep", "Vertical separator", "^\n\n", nil)
 
-	debug := flags.New("", "app", "debug").Default(false, nil).Label("Debug output instead of sending them").ToBool(fs)
+	debug := flags.Bool(fs, "", "app", "debug", "Debug output instead of sending them", false, nil)
 
 	logger.Fatal(fs.Parse(os.Args[1:]))
 	logger.Global(logger.New(loggerConfig))
