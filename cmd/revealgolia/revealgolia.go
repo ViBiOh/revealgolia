@@ -102,17 +102,17 @@ func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]I
 	return objects, nil
 }
 
-func configIndex(request request.Request, app, index string) error {
+func configIndex(ctx context.Context, request request.Request, app, index string) error {
 	settings := map[string]any{
 		"searchableAttributes": []string{"keywords", "img", "content"},
 	}
 
-	_, err := request.Put(getURL(app, "/1/indexes/%s/settings", index)).JSON(context.Background(), settings)
+	_, err := request.Put(getURL(app, "/1/indexes/%s/settings", index)).JSON(ctx, settings)
 	return err
 }
 
-func clearIndex(request request.Request, app, index string) error {
-	_, err := request.Post(getURL(app, "/1/indexes/%s/clear", index)).Send(context.Background(), nil)
+func clearIndex(ctx context.Context, request request.Request, app, index string) error {
+	_, err := request.Post(getURL(app, "/1/indexes/%s/clear", index)).Send(ctx, nil)
 	return err
 }
 
@@ -126,7 +126,7 @@ func debugObjects(objects []Item) error {
 	return nil
 }
 
-func saveObjects(request request.Request, app, index string, objects []Item) error {
+func saveObjects(ctx context.Context, request request.Request, app, index string, objects []Item) error {
 	requests := make([]BatchAction, len(objects))
 	for index, object := range objects {
 		requests[index] = BatchAction{
@@ -135,7 +135,7 @@ func saveObjects(request request.Request, app, index string, objects []Item) err
 		}
 	}
 
-	_, err := request.Post(getURL(app, "/1/indexes/%s/batch", index)).JSON(context.Background(), Batch{requests})
+	_, err := request.Post(getURL(app, "/1/indexes/%s/batch", index)).JSON(ctx, Batch{requests})
 	return err
 }
 
@@ -158,13 +158,15 @@ func main() {
 	logger.Global(logger.New(loggerConfig))
 	defer logger.Close()
 
+	ctx := context.Background()
+
 	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *sep))
 	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *vsep))
 	req := getRequest(*app, *key)
 
 	if !*debug {
-		logger.Fatal(clearIndex(req, *app, *index))
-		logger.Fatal(configIndex(req, *app, *index))
+		logger.Fatal(clearIndex(ctx, req, *app, *index))
+		logger.Fatal(configIndex(ctx, req, *app, *index))
 	}
 
 	logger.Fatal(filepath.Walk(*source, func(path string, info os.FileInfo, _ error) error {
@@ -187,7 +189,7 @@ func main() {
 			if err := debugObjects(objects); err != nil {
 				return err
 			}
-		} else if err := saveObjects(req, *app, *index, objects); err != nil {
+		} else if err := saveObjects(ctx, req, *app, *index, objects); err != nil {
 			return err
 		}
 
