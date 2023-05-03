@@ -144,15 +144,15 @@ func main() {
 
 	loggerConfig := logger.Flags(fs, "logger")
 
-	app := flags.String(fs, "", "algolia", "app", "Application", "", nil)
-	key := flags.String(fs, "", "algolia", "key", "Key", "", nil)
-	index := flags.String(fs, "", "algolia", "index", "Index", "", nil)
-	source := flags.String(fs, "", "reveal", "source", "Walked markdown directory", "", nil)
-	prefixFromFolder := flags.Bool(fs, "", "reveal", "prefixFromFolder", "Use name of folder as URL prefix", false, nil)
-	sep := flags.String(fs, "", "reveal", "sep", "Separator", "^\n\n\n", nil)
-	vsep := flags.String(fs, "", "reveal", "verticalSep", "Vertical separator", "^\n\n", nil)
+	app := flags.New("app", "Application").DocPrefix("algolia").String(fs, "", nil)
+	key := flags.New("key", "Key").DocPrefix("algolia").String(fs, "", nil)
+	index := flags.New("index", "Index").DocPrefix("algolia").String(fs, "", nil)
+	source := flags.New("source", "Walked markdown directory").DocPrefix("reveal").String(fs, "", nil)
+	prefixFromFolder := flags.New("prefixFromFolder", "Use name of folder as URL prefix").DocPrefix("reveal").Bool(fs, false, nil)
+	sep := flags.New("sep", "Separator").DocPrefix("reveal").String(fs, "^\n\n\n", nil)
+	vsep := flags.New("verticalSep", "Vertical separator").DocPrefix("reveal").String(fs, "^\n\n", nil)
 
-	debug := flags.Bool(fs, "", "app", "debug", "Debug output instead of sending them", false, nil)
+	debug := flags.New("debug", "Debug output instead of sending them").DocPrefix("app").Bool(fs, false, nil)
 
 	logger.Fatal(fs.Parse(os.Args[1:]))
 	logger.Global(logger.New(loggerConfig))
