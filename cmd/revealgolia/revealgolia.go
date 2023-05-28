@@ -141,6 +141,7 @@ func saveObjects(ctx context.Context, request request.Request, app, index string
 
 func main() {
 	fs := flag.NewFlagSet("revealgolia", flag.ExitOnError)
+	fs.Usage = flags.Usage(fs)
 
 	loggerConfig := logger.Flags(fs, "logger")
 
