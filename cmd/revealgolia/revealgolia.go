@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -122,7 +123,7 @@ func debugObjects(objects []Item) error {
 		return err
 	}
 
-	logger.Info("%s\n", output)
+	slog.Info(fmt.Sprintf("%s\n", output))
 	return nil
 }
 
@@ -155,9 +156,12 @@ func main() {
 
 	debug := flags.New("debug", "Debug output instead of sending them").DocPrefix("app").Bool(fs, false, nil)
 
-	logger.Fatal(fs.Parse(os.Args[1:]))
-	logger.Global(logger.New(loggerConfig))
-	defer logger.Close()
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		slog.Error("parse flags", "err", err)
+		os.Exit(1)
+	}
+
+	logger.New(loggerConfig)
 
 	ctx := context.Background()
 
@@ -166,11 +170,18 @@ func main() {
 	req := getRequest(*app, *key)
 
 	if !*debug {
-		logger.Fatal(clearIndex(ctx, req, *app, *index))
-		logger.Fatal(configIndex(ctx, req, *app, *index))
+		if err := clearIndex(ctx, req, *app, *index); err != nil {
+			slog.Error("clear index", "err", err)
+			os.Exit(1)
+		}
+
+		if err := configIndex(ctx, req, *app, *index); err != nil {
+			slog.Error("config index", "err", err)
+			os.Exit(1)
+		}
 	}
 
-	logger.Fatal(filepath.Walk(*source, func(path string, info os.FileInfo, _ error) error {
+	err := filepath.Walk(*source, func(path string, info os.FileInfo, _ error) error {
 		if filepath.Ext(path) != ".md" {
 			return nil
 		}
@@ -185,7 +196,7 @@ func main() {
 			return err
 		}
 
-		logger.Info("%d objects found in %s", len(objects), info.Name())
+		slog.Info("Objects found", "count", len(objects), "name", info.Name())
 		if *debug {
 			if err := debugObjects(objects); err != nil {
 				return err
@@ -195,7 +206,11 @@ func main() {
 		}
 
 		return nil
-	}))
+	})
+	if err != nil {
+		slog.Error("walk source", "err", err)
+		os.Exit(1)
+	}
 
-	logger.Info("Done!")
+	slog.Info("Done!")
 }
