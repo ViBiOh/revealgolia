@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"path"
@@ -157,8 +158,7 @@ func main() {
 	debug := flags.New("debug", "Debug output instead of sending them").DocPrefix("app").Bool(fs, false, nil)
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
-		slog.Error("parse flags", "err", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	logger.New(loggerConfig)
