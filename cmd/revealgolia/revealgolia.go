@@ -161,7 +161,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger.New(loggerConfig)
+	logger.Init(loggerConfig)
 
 	ctx := context.Background()
 
