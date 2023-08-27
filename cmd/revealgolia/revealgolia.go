@@ -24,18 +24,15 @@ var (
 	italicRegex       = regexp.MustCompile(`\*\s*([^*]*)\s*\*`)
 )
 
-// Batch contains batchs actions
 type Batch struct {
 	Requests []BatchAction `json:"requests"`
 }
 
-// BatchAction contains action to perform inside a batch
 type BatchAction struct {
 	Action string `json:"action"`
 	Body   Item   `json:"body"`
 }
 
-// Item store indexed item
 type Item struct {
 	URL      string   `json:"url"`
 	Content  string   `json:"content"`
@@ -54,7 +51,6 @@ func getURL(app, path, index string) string {
 	return fmt.Sprintf(fmt.Sprintf("https://%s.algolia.net%s", app, path), index)
 }
 
-// getSearchObjects transform input reveal file to algolia object
 func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]Item, error) {
 	content, err := os.ReadFile(source)
 	if err != nil {
