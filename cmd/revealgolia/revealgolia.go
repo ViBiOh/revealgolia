@@ -114,13 +114,13 @@ func clearIndex(ctx context.Context, request request.Request, app, index string)
 	return err
 }
 
-func debugObjects(objects []Item) error {
+func debugObjects(ctx context.Context, objects []Item) error {
 	output, err := json.MarshalIndent(objects, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	slog.Info(fmt.Sprintf("%s\n", output))
+	slog.InfoContext(ctx, fmt.Sprintf("%s\n", output))
 	return nil
 }
 
@@ -167,12 +167,12 @@ func main() {
 
 	if !*debug {
 		if err := clearIndex(ctx, req, *app, *index); err != nil {
-			slog.Error("clear index", "err", err)
+			slog.ErrorContext(ctx, "clear index", "err", err)
 			os.Exit(1)
 		}
 
 		if err := configIndex(ctx, req, *app, *index); err != nil {
-			slog.Error("config index", "err", err)
+			slog.ErrorContext(ctx, "config index", "err", err)
 			os.Exit(1)
 		}
 	}
@@ -192,9 +192,9 @@ func main() {
 			return err
 		}
 
-		slog.Info("Objects found", "count", len(objects), "name", info.Name())
+		slog.InfoContext(ctx, "Objects found", "count", len(objects), "name", info.Name())
 		if *debug {
-			if err := debugObjects(objects); err != nil {
+			if err := debugObjects(ctx, objects); err != nil {
 				return err
 			}
 		} else if err := saveObjects(ctx, req, *app, *index, objects); err != nil {
@@ -204,7 +204,7 @@ func main() {
 		return nil
 	})
 	if err != nil {
-		slog.Error("walk source", "err", err)
+		slog.ErrorContext(ctx, "walk source", "err", err)
 		os.Exit(1)
 	}
 
