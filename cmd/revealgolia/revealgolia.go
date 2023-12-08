@@ -167,12 +167,12 @@ func main() {
 
 	if !*debug {
 		if err := clearIndex(ctx, req, *app, *index); err != nil {
-			slog.ErrorContext(ctx, "clear index", "err", err)
+			slog.ErrorContext(ctx, "clear index", "error", err)
 			os.Exit(1)
 		}
 
 		if err := configIndex(ctx, req, *app, *index); err != nil {
-			slog.ErrorContext(ctx, "config index", "err", err)
+			slog.ErrorContext(ctx, "config index", "error", err)
 			os.Exit(1)
 		}
 	}
@@ -204,7 +204,7 @@ func main() {
 		return nil
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "walk source", "err", err)
+		slog.ErrorContext(ctx, "walk source", "error", err)
 		os.Exit(1)
 	}
 
