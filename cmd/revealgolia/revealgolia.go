@@ -203,10 +203,7 @@ func main() {
 
 		return nil
 	})
-	if err != nil {
-		slog.ErrorContext(ctx, "walk source", "error", err)
-		os.Exit(1)
-	}
+	logger.FatalfOnErr(ctx, err, "walk source")
 
 	slog.Info("Done!")
 }
