@@ -167,12 +167,12 @@ func main() {
 
 	if !*debug {
 		if err := clearIndex(ctx, req, *app, *index); err != nil {
-			slog.ErrorContext(ctx, "clear index", "error", err)
+			slog.LogAttrs(ctx, slog.LevelError, "clear index", slog.Any("error", err))
 			os.Exit(1)
 		}
 
 		if err := configIndex(ctx, req, *app, *index); err != nil {
-			slog.ErrorContext(ctx, "config index", "error", err)
+			slog.LogAttrs(ctx, slog.LevelError, "config index", slog.Any("error", err))
 			os.Exit(1)
 		}
 	}
@@ -192,7 +192,7 @@ func main() {
 			return err
 		}
 
-		slog.InfoContext(ctx, "Objects found", "count", len(objects), "name", info.Name())
+		slog.LogAttrs(ctx, slog.LevelInfo, "Objects found", slog.Int("count", len(objects)), slog.String("name", info.Name()))
 		if *debug {
 			if err := debugObjects(ctx, objects); err != nil {
 				return err
