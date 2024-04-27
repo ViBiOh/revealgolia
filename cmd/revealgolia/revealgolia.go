@@ -56,7 +56,7 @@ func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]I
 		return nil, err
 	}
 
-	objects := make([]Item, 0)
+	var objects []Item
 	index := 1
 
 	var chapterName string
@@ -75,7 +75,7 @@ func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]I
 				slideImg = matches[1]
 			}
 
-			keywords = make([]string, 0)
+			keywords = keywords[:0]
 			if matches := strongRegex.FindStringSubmatch(slide); len(matches) > 1 {
 				keywords = append(keywords, matches[1:]...)
 			}
