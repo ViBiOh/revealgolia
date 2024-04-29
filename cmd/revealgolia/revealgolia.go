@@ -164,12 +164,12 @@ func main() {
 
 	if !*debug {
 		if err := clearIndex(ctx, req, *app, *index); err != nil {
-			slog.LogAttrs(ctx, slog.LevelError, "clear index", slog.Any("error", err))
+			slog.LogAttrs(ctx, slog.LevelError, "clear index", slog.String("index", *index), slog.Any("error", err))
 			os.Exit(1)
 		}
 
 		if err := configIndex(ctx, req, *app, *index); err != nil {
-			slog.LogAttrs(ctx, slog.LevelError, "config index", slog.Any("error", err))
+			slog.LogAttrs(ctx, slog.LevelError, "config index", slog.String("index", *index), slog.Any("error", err))
 			os.Exit(1)
 		}
 	}
@@ -189,7 +189,7 @@ func main() {
 			return err
 		}
 
-		slog.LogAttrs(ctx, slog.LevelInfo, "Objects found", slog.Int("count", len(objects)), slog.String("name", info.Name()))
+		slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("%d objects found in `%s`", len(objects), path), slog.String("index", *index))
 		if *debug {
 			if err := debugObjects(ctx, objects); err != nil {
 				return err
@@ -202,5 +202,5 @@ func main() {
 	})
 	logger.FatalfOnErr(ctx, err, "walk source")
 
-	slog.Info("Done!")
+	slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("Index `%s` refreshed!", *index), slog.String("path", *source))
 }
