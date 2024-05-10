@@ -154,9 +154,9 @@ func main() {
 
 	_ = fs.Parse(os.Args[1:])
 
-	logger.Init(loggerConfig)
-
 	ctx := context.Background()
+
+	logger.Init(ctx, loggerConfig)
 
 	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *sep))
 	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *vsep))
