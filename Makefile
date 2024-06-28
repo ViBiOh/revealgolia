@@ -8,7 +8,7 @@ endif
 APP_NAME = revealgolia
 PACKAGES ?= ./...
 
-MAIN_SOURCE = cmd/revealgolia/revealgolia.go
+MAIN_SOURCE = ./cmd/revealgolia/
 MAIN_RUNNER = go run $(MAIN_SOURCE)
 ifeq ($(DEBUG), true)
 	MAIN_RUNNER = dlv debug $(MAIN_SOURCE) --

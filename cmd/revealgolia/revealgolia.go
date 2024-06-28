@@ -42,100 +42,6 @@ type Item struct {
 	V        int      `json:"v"`
 }
 
-func getRequest(app, key string) request.Request {
-	return request.New().Header("X-Algolia-Application-Id", app).Header("X-Algolia-API-Key", key)
-}
-
-func getURL(app, path, index string) string {
-	return fmt.Sprintf(fmt.Sprintf("https://%s.algolia.net%s", app, path), index)
-}
-
-func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]Item, error) {
-	content, err := os.ReadFile(source)
-	if err != nil {
-		return nil, err
-	}
-
-	var objects []Item
-	index := 1
-
-	var chapterName string
-	var slideImg string
-	var keywords []string
-
-	contentStr := string(content)
-	for chapterNum, chapter := range sep.Split(contentStr, -1) {
-		if title := chapterTitleRegex.FindStringSubmatch(chapter); len(title) > 1 {
-			chapterName = title[1]
-		}
-
-		for slideNum, slide := range verticalSep.Split(chapter, -1) {
-			slideImg = ""
-			if matches := imgRegex.FindStringSubmatch(slide); len(matches) > 1 {
-				slideImg = matches[1]
-			}
-
-			keywords = keywords[:0]
-			if matches := strongRegex.FindStringSubmatch(slide); len(matches) > 1 {
-				keywords = append(keywords, matches[1:]...)
-			}
-			if matches := italicRegex.FindStringSubmatch(slide); len(matches) > 1 {
-				keywords = append(keywords, matches[1:]...)
-			}
-
-			objects = append(objects, Item{
-				URL:      path.Join("/", name, fmt.Sprintf("/#/%d/%d", chapterNum, slideNum)),
-				H:        chapterNum,
-				V:        slideNum,
-				Content:  slide,
-				Chapter:  chapterName,
-				Keywords: keywords,
-				Img:      slideImg,
-			})
-			index++
-		}
-	}
-
-	return objects, nil
-}
-
-func configIndex(ctx context.Context, request request.Request, app, index string) error {
-	settings := map[string]any{
-		"searchableAttributes": []string{"keywords", "img", "content"},
-	}
-
-	_, err := request.Put(getURL(app, "/1/indexes/%s/settings", index)).JSON(ctx, settings)
-	return err
-}
-
-func clearIndex(ctx context.Context, request request.Request, app, index string) error {
-	_, err := request.Post(getURL(app, "/1/indexes/%s/clear", index)).Send(ctx, nil)
-	return err
-}
-
-func debugObjects(ctx context.Context, objects []Item) error {
-	output, err := json.MarshalIndent(objects, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	slog.InfoContext(ctx, fmt.Sprintf("%s\n", output))
-	return nil
-}
-
-func saveObjects(ctx context.Context, request request.Request, app, index string, objects []Item) error {
-	requests := make([]BatchAction, len(objects))
-	for index, object := range objects {
-		requests[index] = BatchAction{
-			Action: "addObject",
-			Body:   object,
-		}
-	}
-
-	_, err := request.Post(getURL(app, "/1/indexes/%s/batch", index)).JSON(ctx, Batch{requests})
-	return err
-}
-
 func main() {
 	fs := flag.NewFlagSet("revealgolia", flag.ExitOnError)
 	fs.Usage = flags.Usage(fs)
@@ -203,4 +109,98 @@ func main() {
 	logger.FatalfOnErr(ctx, err, "walk source")
 
 	slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("Index `%s` refreshed!", *index), slog.String("path", *source))
+}
+
+func getRequest(app, key string) request.Request {
+	return request.New().Header("X-Algolia-Application-Id", app).Header("X-Algolia-API-Key", key)
+}
+
+func clearIndex(ctx context.Context, request request.Request, app, index string) error {
+	_, err := request.Post(getURL(app, "/1/indexes/%s/clear", index)).Send(ctx, nil)
+	return err
+}
+
+func getURL(app, path, index string) string {
+	return fmt.Sprintf(fmt.Sprintf("https://%s.algolia.net%s", app, path), index)
+}
+
+func configIndex(ctx context.Context, request request.Request, app, index string) error {
+	settings := map[string]any{
+		"searchableAttributes": []string{"keywords", "img", "content"},
+	}
+
+	_, err := request.Put(getURL(app, "/1/indexes/%s/settings", index)).JSON(ctx, settings)
+	return err
+}
+
+func getSearchObjects(name, source string, sep, verticalSep *regexp.Regexp) ([]Item, error) {
+	content, err := os.ReadFile(source)
+	if err != nil {
+		return nil, err
+	}
+
+	var objects []Item
+	index := 1
+
+	var chapterName string
+	var slideImg string
+	var keywords []string
+
+	contentStr := string(content)
+	for chapterNum, chapter := range sep.Split(contentStr, -1) {
+		if title := chapterTitleRegex.FindStringSubmatch(chapter); len(title) > 1 {
+			chapterName = title[1]
+		}
+
+		for slideNum, slide := range verticalSep.Split(chapter, -1) {
+			slideImg = ""
+			if matches := imgRegex.FindStringSubmatch(slide); len(matches) > 1 {
+				slideImg = matches[1]
+			}
+
+			keywords = keywords[:0]
+			if matches := strongRegex.FindStringSubmatch(slide); len(matches) > 1 {
+				keywords = append(keywords, matches[1:]...)
+			}
+			if matches := italicRegex.FindStringSubmatch(slide); len(matches) > 1 {
+				keywords = append(keywords, matches[1:]...)
+			}
+
+			objects = append(objects, Item{
+				URL:      path.Join("/", name, fmt.Sprintf("/#/%d/%d", chapterNum, slideNum)),
+				H:        chapterNum,
+				V:        slideNum,
+				Content:  slide,
+				Chapter:  chapterName,
+				Keywords: keywords,
+				Img:      slideImg,
+			})
+			index++
+		}
+	}
+
+	return objects, nil
+}
+
+func debugObjects(ctx context.Context, objects []Item) error {
+	output, err := json.MarshalIndent(objects, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	slog.InfoContext(ctx, fmt.Sprintf("%s\n", output))
+	return nil
+}
+
+func saveObjects(ctx context.Context, request request.Request, app, index string, objects []Item) error {
+	requests := make([]BatchAction, len(objects))
+	for index, object := range objects {
+		requests[index] = BatchAction{
+			Action: "addObject",
+			Body:   object,
+		}
+	}
+
+	_, err := request.Post(getURL(app, "/1/indexes/%s/batch", index)).JSON(ctx, Batch{requests})
+	return err
 }
