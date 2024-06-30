@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/ViBiOh/flags"
 	"github.com/ViBiOh/httputils/v4/pkg/logger"
 	"github.com/ViBiOh/httputils/v4/pkg/request"
 )
@@ -43,72 +41,57 @@ type Item struct {
 }
 
 func main() {
-	fs := flag.NewFlagSet("revealgolia", flag.ExitOnError)
-	fs.Usage = flags.Usage(fs)
-
-	loggerConfig := logger.Flags(fs, "logger")
-
-	app := flags.New("app", "Application").DocPrefix("algolia").String(fs, "", nil)
-	key := flags.New("key", "Key").DocPrefix("algolia").String(fs, "", nil)
-	index := flags.New("index", "Index").DocPrefix("algolia").String(fs, "", nil)
-	source := flags.New("source", "Walked markdown directory").DocPrefix("reveal").String(fs, "", nil)
-	prefixFromFolder := flags.New("prefixFromFolder", "Use name of folder as URL prefix").DocPrefix("reveal").Bool(fs, false, nil)
-	sep := flags.New("sep", "Separator").DocPrefix("reveal").String(fs, "^\n\n\n", nil)
-	vsep := flags.New("verticalSep", "Vertical separator").DocPrefix("reveal").String(fs, "^\n\n", nil)
-
-	debug := flags.New("debug", "Debug output instead of sending them").DocPrefix("app").Bool(fs, false, nil)
-
-	_ = fs.Parse(os.Args[1:])
+	config := newConfig()
 
 	ctx := context.Background()
 
-	logger.Init(ctx, loggerConfig)
+	newClients(ctx, config)
 
-	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *sep))
-	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *vsep))
-	req := getRequest(*app, *key)
+	sepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *config.sep))
+	vsepRegex := regexp.MustCompile(fmt.Sprintf("(?m)%s", *config.vsep))
+	req := getRequest(*config.app, *config.key)
 
-	if !*debug {
-		if err := clearIndex(ctx, req, *app, *index); err != nil {
-			slog.LogAttrs(ctx, slog.LevelError, "clear index", slog.String("index", *index), slog.Any("error", err))
-			os.Exit(1)
-		}
+	if !*config.debug {
+		err := clearIndex(ctx, req, *config.app, *config.index)
+		logger.FatalfOnErr(ctx, err, "clear index", slog.String("index", *config.index))
 
-		if err := configIndex(ctx, req, *app, *index); err != nil {
-			slog.LogAttrs(ctx, slog.LevelError, "config index", slog.String("index", *index), slog.Any("error", err))
-			os.Exit(1)
-		}
+		err = configIndex(ctx, req, *config.app, *config.index)
+		logger.FatalfOnErr(ctx, err, "config index", slog.String("index", *config.index))
 	}
 
-	err := filepath.Walk(*source, func(path string, info os.FileInfo, _ error) error {
-		if filepath.Ext(path) != ".md" {
-			return nil
-		}
-
-		name := ""
-		if *prefixFromFolder {
-			name = filepath.Base(filepath.Dir(path))
-		}
-
-		objects, err := getSearchObjects(name, path, sepRegex, vsepRegex)
-		if err != nil {
-			return err
-		}
-
-		slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("%d objects found in `%s`", len(objects), path), slog.String("index", *index))
-		if *debug {
-			if err := debugObjects(ctx, objects); err != nil {
-				return err
-			}
-		} else if err := saveObjects(ctx, req, *app, *index, objects); err != nil {
-			return err
-		}
-
-		return nil
+	err := filepath.Walk(*config.source, func(path string, info os.FileInfo, _ error) error {
+		return processFile(ctx, path, config, sepRegex, vsepRegex, req)
 	})
 	logger.FatalfOnErr(ctx, err, "walk source")
 
-	slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("Index `%s` refreshed!", *index), slog.String("path", *source))
+	slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("Index `%s` refreshed!", *config.index), slog.String("path", *config.source))
+}
+
+func processFile(ctx context.Context, path string, config configuration, sepRegex *regexp.Regexp, vsepRegex *regexp.Regexp, req request.Request) error {
+	if filepath.Ext(path) != ".md" {
+		return nil
+	}
+
+	var name string
+	if *config.prefixFromFolder {
+		name = filepath.Base(filepath.Dir(path))
+	}
+
+	objects, err := getSearchObjects(name, path, sepRegex, vsepRegex)
+	if err != nil {
+		return err
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("%d objects found in `%s`", len(objects), path), slog.String("index", *config.index))
+	if *config.debug {
+		if err := debugObjects(ctx, objects); err != nil {
+			return err
+		}
+	} else if err := saveObjects(ctx, req, *config.app, *config.index, objects); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getRequest(app, key string) request.Request {
