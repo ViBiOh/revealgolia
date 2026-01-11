@@ -67,7 +67,7 @@ func main() {
 	slog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf("Index `%s` refreshed!", *config.index), slog.String("path", *config.source))
 }
 
-func processFile(ctx context.Context, path string, config configuration, sepRegex *regexp.Regexp, vsepRegex *regexp.Regexp, req request.Request) error {
+func processFile(ctx context.Context, path string, config configuration, sepRegex, vsepRegex *regexp.Regexp, req request.Request) error {
 	if filepath.Ext(path) != ".md" {
 		return nil
 	}
